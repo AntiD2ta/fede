@@ -41,11 +41,24 @@ A claimed problem with the change, from a reviewer, a failed check, CI, a confli
 _Avoid_: issue, comment, defect
 
 **Ledger**:
-The record of every finding across every round of a run, including fixed, dropped and deferred ones.
+The record of every finding across every round of a run, including resolved, superseded, dropped and deferred ones.
 _Avoid_: report, findings list
 
 **Disposition**:
-What happens to a finding: fix, drop, or defer.
+What happens to a finding: fix, drop, or defer. The same three apply to every source, external review comments included.
+_Avoid_: dismiss, ask
+
+**Status**:
+Where a finding stands: open, resolved, superseded, dropped, or deferred. A finding disposed as fix stays open until a later commit resolves it.
+_Avoid_: fixed, state
+
+**Finding verdict**:
+A reviewer's or verifier's judgment on one open finding at a commit: still open, resolved, or superseded by a newer finding.
+_Avoid_: verdict, ruling
+
+**Returned finding**:
+A finding that supersedes a resolved one: the problem came back after it was fixed.
+_Avoid_: reopened finding, regression
 
 **Tripwire**:
 A deterministic rule that forces a finding to the human regardless of any agent's judgment, such as a change to an exported API or a spec file.
@@ -63,11 +76,12 @@ A verification fede runs or requests: a command, an agent driving a verification
 _Avoid_: test, gate
 
 **Evidence**:
-Artifacts that prove a check's verdict, bound to the commit they were produced at.
+Artifacts that prove a check verdict, bound to the commit they were produced at.
 _Avoid_: proof, logs
 
-**Verdict**:
+**Check verdict**:
 A check's result at a commit: pass, pass with notes, or fail.
+_Avoid_: verdict
 
 **Budget**:
 The number of repair attempts fede allows in a category (review fixes, check fixes, conflict repairs) before escalating.
