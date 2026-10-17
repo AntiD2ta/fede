@@ -1,0 +1,3 @@
+# The item protocol starts minimal and only grows additively
+
+The coordinator contract (`next` items and `submit` results) starts as small as possible: an item is `{id, kind}` plus the fields its kind needs, and a submit is the result JSON plus who submitted it. Anything inferable from persisted state (run, step, sequence, timestamps, commit) is computed rather than stored or sent. A field is added only when a slice needs it, fields are only ever added, and a protocol version appears with the first breaking change. We chose this over designing the full schema up front because that schema was speculation without evidence.

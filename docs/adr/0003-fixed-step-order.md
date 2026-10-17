@@ -1,0 +1,3 @@
+# The step order is engine code; packages configure it
+
+The pipeline's step order is fixed in the engine, the way Pi's agent loop is fixed. Packages supply role prompts, result schemas, check definitions, policies (tripwires, budgets, push rules) and switches for optional steps, but cannot reorder steps or insert new ones. We rejected a pipeline graph defined in package YAML because the core invariants (results bound to a commit, the push guard, repairs re-entering review, budgets) must hold whatever a package does, and enforcing them over an arbitrary graph costs a DSL, merge semantics and validation.

@@ -1,0 +1,3 @@
+# Packages are directories that extend by file
+
+A package is a directory with a `fede.yaml` manifest (name, version, extends), prompt files, schemas and vendored skills (each with a `SOURCE` file naming repo, commit and path). `extends` resolves by file: fede looks for each file in the package first, then in the package it extends; a policy section in `fede.yaml` is replaced whole, never deep-merged. The reference package is embedded in the binary and unpacked to `~/.fede/packages/reference/` when the binary version changes, so tasks can always point agents at real paths. We rejected a package manager with lockfiles and resolution for v1; git sources and update notices come later as an additive way to obtain the same directories.
