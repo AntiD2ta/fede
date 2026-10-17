@@ -13,3 +13,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0007](0007-packages-are-directories.md) | Packages are directories that extend by file | Packages, customization | accepted |
 | [0008](0008-go-library-first.md) | fede is a Go library first, with a thin CLI | Architecture, language | accepted |
 | [0009](0009-fede-never-merges.md) | fede never merges | Scope, human control | accepted |
+| [0010](0010-submitter-is-a-claim.md) | Who submitted a result is a recorded claim, not authentication | Coordinator contract, human control | accepted |
