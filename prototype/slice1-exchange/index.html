@@ -1,0 +1,295 @@
+<!doctype html>
+<!-- PROTOTYPE, throwaway. Answers ticket "Slice 1 item and submit exchanges, end to end". Not production code. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE: fede slice 1 exchanges</title>
+<style>
+:root { color-scheme: light dark;
+  --bg:#fafafa; --panel:#fff; --ink:#1a1a1a; --muted:#666; --line:#ddd; --accent:#2457c5; --err:#b3261e; --ok:#1e7a3a; --code:#f2f2f2; }
+@media (prefers-color-scheme: dark) { :root {
+  --bg:#0f1419; --panel:#161c23; --ink:#e6edf3; --muted:#9aa7b4; --line:#2a333d; --accent:#6ea0ff; --err:#ff7b72; --ok:#56d364; --code:#0b0f14; } }
+* { box-sizing:border-box }
+body { margin:0; font:14px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink) }
+header { padding:16px 24px; border-bottom:1px solid var(--line) }
+h1 { margin:0 0 4px; font-size:18px } h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:16px 0 8px }
+.q { color:var(--muted); max-width:1000px }
+main { display:grid; grid-template-columns:340px 1fr 1fr; gap:16px; padding:16px 24px }
+section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0 }
+button { font:inherit; padding:5px 9px; margin:2px 0; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--ink); cursor:pointer; text-align:left; width:100% }
+button:hover { border-color:var(--accent) } button.next { border-color:var(--accent); font-weight:600 }
+button:disabled { opacity:.4; cursor:default }
+.grp { color:var(--muted); font-size:12px; margin-top:8px }
+.tabs { display:flex; flex-wrap:wrap; gap:4px } .tabs button { width:auto }
+.tabs button.on { background:var(--accent); color:var(--bg) }
+pre { background:var(--code); padding:8px; border-radius:6px; overflow:auto; margin:4px 0 10px; font-size:12px; white-space:pre-wrap }
+.cmd { color:var(--accent); font-weight:600 } .err { color:var(--err) } .ok { color:var(--ok) }
+table { border-collapse:collapse; width:100%; font-size:12px } td,th { border-bottom:1px solid var(--line); padding:3px 6px; text-align:left }
+.kv span { color:var(--muted) } #log { max-height:70vh; overflow:auto }
+label { display:block; margin:6px 0 }
+</style>
+</head>
+<body>
+<header>
+  <h1>PROTOTYPE: what fede and a coordinator say to each other in slice 1</h1>
+  <div class="q">Question: what do the <code>fede next</code> items and <code>fede submit</code> payloads look like for slice 1 (run creation, review task, findings decision, fix wait with handoff.md, re-review, draft PR push, done), keeping only fields the slice uses (ADR 0006)?
+  The buttons on the left play the coordinator and the human. The middle column is the terminal transcript. The right column is what fede keeps on disk. Toggle <b>thin</b> (fields only the coordinator acts on; everything else lives in a rendered file) against <b>fat</b> (paths and context inline) to compare item shapes.</div>
+</header>
+<main>
+<section>
+  <label><input type="radio" name="shape" value="thin" checked> thin items</label>
+  <label><input type="radio" name="shape" value="fat"> fat items</label>
+  <h2>Guided walkthroughs</h2>
+  <div class="tabs" id="tabs"></div>
+  <p id="scDesc" class="q"></p>
+  <div id="scSteps"></div>
+  <h2>Free play</h2>
+  <div id="free"></div>
+</section>
+<section><h2>Transcript</h2><div id="log"></div></section>
+<section>
+  <h2>Run state</h2><div id="state"></div>
+  <h2>Files fede rendered for the latest item</h2><div id="files"></div>
+  <h2>Event log (append-only, on disk)</h2><div id="events"></div>
+</section>
+</main>
+
+<script>
+// ---- Pure module: a fake fede engine. No DOM in here. ----
+const Fede = (() => {
+  const RUN = "/home/dev/.fede/runs/feat-login", WT = RUN + "/worktree", PKG = "/home/dev/.fede/packages/reference";
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  let shaN = 0; const sha = () => ["a1f3c09","b7e21d4","c90aa3f","d4410be","e5c2f71","f0b9d3a"][shaN++ % 6];
+
+  function init() {
+    shaN = 0; const h = sha();
+    return { world: { branch: "feat/login", history: [h], head: h }, run: null };
+  }
+
+  const ev = (r, type, data = {}) => r.events.push({ n: r.events.length + 1, type, ...data });
+
+  function issue(r, item, files) {
+    r.seq++; item = JSON.parse(JSON.stringify({ id: "i" + r.seq, ...item }).replaceAll("{id}", "i" + r.seq));
+    r.items[item.id] = { item, at: r.worktreeHead, submitted: null };
+    if (item.kind === "task" || item.kind === "decision") r.pending = item.id;
+    r.files = files ? files(item.id) : {};
+    ev(r, "item.issued", { id: item.id, kind: item.kind, at: r.worktreeHead });
+    return item;
+  }
+
+  const openFor = (r, st) => r.findings.filter((f) => f.status === st);
+
+  function reviewTask(r, shape) {
+    const open = openFor(r, "fix");
+    return issue(r, {
+      kind: "task", role: "reviewer", tier: "flagship", thinking: "high", prompt: RUN + "/items/{id}/prompt.md",
+      ...(shape === "fat" ? { cwd: WT, tools: "read-only", skills: [PKG + "/skills/code-review/SKILL.md"], schema: PKG + "/schemas/review.json" } : {}),
+    }, (id) => ({ [RUN + "/items/" + id + "/prompt.md"]:
+`# Role: reviewer (read only)
+Work only in ${WT}. Do not edit files.
+Read ${PKG}/skills/code-review/SKILL.md and resolve its relative files against that directory.
+Review the change main...${r.worktreeHead}: ${RUN}/items/${id}/diff.patch
+${open.length ? "\nFindings the human chose to fix. For each, say whether this head resolves it:\n" + open.map((f) => `- ${f.id}: ${f.title} (${f.path}:${f.line})`).join("\n") + "\n" : ""}
+Reply with only JSON matching ${PKG}/schemas/review.json:
+{"findings":[{"title","path","line","body"}], "resolved":["<finding id>"]}` }));
+  }
+
+  function disposeDecision(r, shape) {
+    const fresh = openFor(r, "new");
+    return issue(r, {
+      kind: "decision", ask: RUN + "/items/{id}/decision.md",
+      ...(shape === "fat" ? { findings: fresh.map(({ id, title, path, line }) => ({ id, title, path, line })), options: ["fix", "drop", "defer"] } : {}),
+    }, (id) => ({ [RUN + "/items/" + id + "/decision.md"]:
+`# Dispose the review findings at ${r.worktreeHead}
+${fresh.map((f) => `\n## ${f.id}: ${f.title}\n${f.path}:${f.line}\n${f.body}`).join("\n")}
+
+Ask the human for fix, drop or defer per finding, then:
+fede submit ${id} --by human <<< '{${fresh.map((f) => `"${f.id}":"<fix|drop|defer>"`).join(",")}}'` }));
+  }
+
+  function next(state, shape) {
+    const s = clone(state), w = s.world; let r = s.run; const notes = [];
+    if (!r) {
+      r = s.run = { seq: 0, worktreeHead: w.head, lease: w.head, reviewedHead: null, pending: null, wait: null, items: {}, findings: [], events: [], files: {}, done: null };
+      ev(r, "run.created", { branch: w.branch, head: w.head });
+      ev(r, "worktree.created", { path: WT, head: w.head });
+      ev(r, "lease.recorded", { remote: "origin/" + w.branch, expect: "absent" });
+      notes.push("no run for feat/login, so fede created one");
+    }
+    if (r.done) return { state: s, out: r.items[r.done].item, notes };
+    if (r.pending) return { state: s, out: r.items[r.pending].item, notes: [...notes, "pending item re-printed, no new id"] };
+
+    let item;
+    if (r.reviewedHead && r.reviewedHead !== w.head) {
+      if (!w.history.includes(r.reviewedHead)) {
+        item = issue(r, { kind: "decision", ask: RUN + "/items/{id}/decision.md", ...(shape === "fat" ? { options: ["review-new-head", "stop"] } : {}) }, (id) => ({ [RUN + "/items/" + id + "/decision.md"]:
+`# ${w.branch} was rewritten
+fede reviewed ${r.reviewedHead}, and ${w.branch} (now ${w.head}) no longer contains it.
+fede will not build on history it did not see.
+
+fede submit ${id} --by human <<< '{"choice":"<review-new-head|stop>"}'` }));
+        r.wait = null; return { state: s, out: item, notes: [...notes, "history rewritten: fail closed into a decision"] };
+      }
+      r.worktreeHead = w.head; ev(r, "worktree.advanced", { head: w.head }); notes.push("branch moved forward, worktree advanced");
+      r.wait = null; return { state: s, out: reviewTask(r, shape), notes };
+    }
+    if (!r.reviewedHead) { r.wait = null; return { state: s, out: reviewTask(r, shape), notes }; }
+    if (openFor(r, "new").length) { r.wait = null; return { state: s, out: disposeDecision(r, shape), notes }; }
+    if (openFor(r, "fix").length) {
+      if (r.wait) return { state: s, out: r.items[r.wait].item, notes: [...notes, "still waiting for a commit on " + w.branch + "; same wait re-printed"] };
+      const fx = openFor(r, "fix");
+      item = issue(r, { kind: "wait", on: "fix", handoff: RUN + "/handoff.md", ...(shape === "fat" ? { branch: w.branch, head: w.head } : {}) }, () => ({ [RUN + "/handoff.md"]:
+`# Fixes for ${w.branch} at ${r.worktreeHead}
+Commit fixes on ${w.branch} in your own worktree. Do not rewrite history.
+Then ask the coordinator to run \`fede next\`.
+${fx.map((f) => `\n## ${f.id}: ${f.title}\n${f.path}:${f.line}\n${f.body}`).join("\n")}` }));
+      r.wait = item.id; return { state: s, out: item, notes };
+    }
+    // Clean: push (deterministic, fede does it itself), then done.
+    ev(r, "push.started", { head: r.worktreeHead, lease: r.lease });
+    ev(r, "push.done", { head: r.worktreeHead });
+    ev(r, "pr.created", { number: 12, draft: true });
+    const pr = "https://github.com/dev/app/pull/12";
+    item = issue(r, { kind: "done", pr, ...(shape === "fat" ? { head: r.worktreeHead, findings: Object.fromEntries(r.findings.map((f) => [f.id, f.status])) } : {}) }, () => ({ ["PR #12 body (rendered by fede from the ledger)"]:
+`## Review by fede\n| Finding | Disposition |\n|---|---|\n${r.findings.map((f) => `| ${f.id}: ${f.title} | ${f.status} |`).join("\n") || "| none | |"}` }));
+    r.done = item.id;
+    return { state: s, out: item, notes };
+  }
+
+  function validate(item, payload, by, r) {
+    if (item.kind === "task") {
+      if (!Array.isArray(payload.findings)) return "findings: required array";
+      for (const [i, f] of payload.findings.entries()) for (const k of ["title", "path", "line", "body"]) if (f[k] === undefined) return `findings[${i}].${k}: required`;
+      for (const id of payload.resolved || []) if (!r.findings.some((f) => f.id === id && f.status === "fix")) return `resolved: ${id} is not a finding marked fix`;
+      return null;
+    }
+    if (by !== "human") return "decisions need --by human";
+    if (payload.choice !== undefined) return ["review-new-head", "stop"].includes(payload.choice) ? null : "choice: review-new-head or stop";
+    for (const f of r.findings.filter((f) => f.status === "new")) if (!["fix", "drop", "defer"].includes(payload[f.id])) return `${f.id}: fix, drop or defer required`;
+    return null;
+  }
+
+  function submit(state, id, payload, by) {
+    const s = clone(state), r = s.run;
+    const rec = r && r.items[id];
+    if (!rec) return { state, out: { error: `unknown item ${id}` } };
+    if (rec.item.kind === "wait" || rec.item.kind === "done") return { state, out: { error: `${id} is a ${rec.item.kind}; nothing to submit, call fede next` } };
+    if (rec.submitted) return JSON.stringify(rec.submitted) === JSON.stringify({ payload, by })
+      ? { state, out: { ok: true, replay: true } } : { state, out: { error: `${id} already submitted with a different result` } };
+    const bad = validate(rec.item, payload, by, r);
+    if (bad) return { state, out: { error: bad } };
+    rec.submitted = { payload, by }; r.pending = null;
+    ev(r, "submit.accepted", { id, by, at: rec.at });
+    let out = { ok: true };
+    if (rec.item.kind === "task") {
+      for (const fid of payload.resolved || []) r.findings.find((f) => f.id === fid).status = "resolved";
+      const ids = payload.findings.map((f) => { const nid = "f" + (r.findings.length + 1); r.findings.push({ id: nid, ...f, status: "new", at: rec.at }); return nid; });
+      r.reviewedHead = rec.at;
+      out = { ok: true, findings: ids };
+    } else if (payload.choice === "stop") {
+      ev(r, "run.stopped"); const d = issue(r, { kind: "done" }); r.done = d.id;
+    } else if (payload.choice === "review-new-head") {
+      r.worktreeHead = r.lease = s.world.head; r.reviewedHead = null; ev(r, "worktree.reset", { head: s.world.head });
+    } else {
+      for (const f of r.findings) if (f.status === "new") f.status = payload[f.id];
+    }
+    return { state: s, out };
+  }
+
+  function stop(state) {
+    const s = clone(state), r = s.run;
+    if (!r || r.done) return { state, out: { error: "no active run" } };
+    r.pending = null; ev(r, "run.stopped"); const d = issue(r, { kind: "done" }); r.done = d.id;
+    return { state: s, out: { ok: true } };
+  }
+
+  // Outside fede: the human commits in their own worktree.
+  function humanCommit(state) { const s = clone(state); const h = sha(); s.world.history.push(h); s.world.head = h; return s; }
+  function humanAmend(state) { const s = clone(state); const h = sha(); s.world.history[s.world.history.length - 1] = h; s.world.head = h; return s; }
+
+  return { init, next, submit, stop, humanCommit, humanAmend };
+})();
+
+// ---- Page shell ----
+let S = Fede.init(), lastSubmitted = null;
+const $ = (id) => document.getElementById(id);
+const shape = () => document.querySelector("input[name=shape]:checked").value;
+const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const log = (html) => { $("log").insertAdjacentHTML("beforeend", html); $("log").scrollTop = 1e9; };
+const pendingId = () => S.run && S.run.pending;
+
+const reviews = {
+  three: { findings: [
+    { title: "Session token logged at debug level", path: "auth/session.go", line: 88, body: "The raw token is passed to log.Debug." },
+    { title: "Login handler ignores ctx cancellation", path: "auth/handler.go", line: 41, body: "The DB call uses context.Background()." },
+    { title: "Rename tokTTL to tokenTTL", path: "auth/config.go", line: 12, body: "Abbreviation differs from the rest of the package." } ], resolved: [] },
+  clean: () => ({ findings: [], resolved: S.run.findings.filter((f) => f.status === "fix").map((f) => f.id) }),
+  unresolved: { findings: [], resolved: [] },
+  invalid: { findings: [{ path: "auth/session.go", line: 88 }] },
+};
+const dispose = (mode) => Object.fromEntries(S.run.findings.filter((f) => f.status === "new").map((f, i) => [f.id, mode === "drop" ? (i ? "defer" : "drop") : ["fix", "drop", "defer"][i] || "defer"]));
+
+function doNext() {
+  const r = Fede.next(S, shape()); S = r.state;
+  log(`<div class="cmd">$ fede next</div>${r.notes.map((n) => `<div class="q">// ${esc(n)}</div>`).join("")}<pre>${esc(JSON.stringify(r.out, null, 2))}</pre>`);
+}
+function doSubmit(payload, by = "agent", id = pendingId()) {
+  if (typeof payload === "function") payload = payload();
+  const r = Fede.submit(S, id, payload, by); S = r.state;
+  if (!r.out.error) lastSubmitted = { id, payload, by };
+  log(`<div class="cmd">$ fede submit ${id}${by === "human" ? " --by human" : ""} &lt;&lt;&lt; result.json</div><pre>${esc(JSON.stringify(payload))}</pre><pre class="${r.out.error ? "err" : "ok"}">${esc(JSON.stringify(r.out))}</pre>`);
+}
+const world = (fn, msg) => { S = fn(S); log(`<div class="q">// outside fede: ${esc(msg)} (feat/login now ${S.world.head})</div>`); };
+
+const A = {
+  next: ["fede next", doNext],
+  rev3: ["Reviewer submits 3 findings", () => doSubmit(reviews.three)],
+  revClean: ["Reviewer submits: clean, fixes resolved", () => doSubmit(reviews.clean)],
+  revUnres: ["Reviewer submits: fix not resolved", () => doSubmit(reviews.unresolved)],
+  revBad: ["Reviewer submits invalid JSON shape", () => doSubmit(reviews.invalid)],
+  dispHuman: ["Human disposes: fix, drop, defer", () => doSubmit(() => dispose("mixed"), "human")],
+  dispNoFix: ["Human disposes: no fixes", () => doSubmit(() => dispose("drop"), "human")],
+  dispAgent: ["Coordinator decides on its own (no --by human)", () => doSubmit(() => dispose("mixed"), "agent")],
+  replay: ["Re-send the last accepted submit", () => lastSubmitted && doSubmit(lastSubmitted.payload, lastSubmitted.by, lastSubmitted.id)],
+  commit: ["Human commits the fix on feat/login", () => world(Fede.humanCommit, "human committed a fix")],
+  amend: ["Human amends the last commit instead", () => world(Fede.humanAmend, "human amended and rewrote history")],
+  rewriteOk: ["Human: review the new head", () => doSubmit({ choice: "review-new-head" }, "human")],
+  stop: ["fede stop", () => { const r = Fede.stop(S); S = r.state; log(`<div class="cmd">$ fede stop</div><pre>${esc(JSON.stringify(r.out))}</pre>`); }],
+};
+
+const scenarios = [
+  { name: "Happy path with a fix", desc: "Review finds three problems; the human fixes one, drops one, defers one; fede waits for the fix commit, re-reviews the new head and pushes the draft PR. Watch: the wait is re-printed with the same id while nothing changed.",
+    steps: ["next", "rev3", "next", "dispHuman", "next", "next", "commit", "next", "revClean", "next"] },
+  { name: "Nothing to fix", desc: "The human drops or defers every finding. There is no wait: the next call pushes and returns done.",
+    steps: ["next", "rev3", "next", "dispNoFix", "next"] },
+  { name: "Resume and replay", desc: "A fresh coordinator session calls next twice and gets the same task. A retried submit with the same payload is accepted as a replay; a malformed one is refused before it touches state.",
+    steps: ["next", "next", "revBad", "rev3", "replay", "next"] },
+  { name: "Agent tries to decide", desc: "Should be illegal: the coordinator answers the findings decision itself. fede refuses unless the submit says --by human.",
+    steps: ["next", "rev3", "next", "dispAgent", "dispHuman", "next"] },
+  { name: "Fix does not land", desc: "The re-reviewer says the fix finding is still open. fede goes back to waiting on the same handoff. Watch: no budget stops this loop in slice 1.",
+    steps: ["next", "rev3", "next", "dispHuman", "next", "commit", "next", "revUnres", "next"] },
+  { name: "History rewritten", desc: "Instead of adding a commit, the human amends. fede no longer finds the head it reviewed on the branch and fails closed into a decision.",
+    steps: ["next", "rev3", "next", "dispHuman", "next", "amend", "next", "rewriteOk", "next"] },
+];
+
+let sc = null, step = 0;
+function reset() { S = Fede.init(); lastSubmitted = null; $("log").innerHTML = ""; }
+function pick(i) { sc = i; step = 0; reset(); render(); }
+function render() {
+  $("tabs").innerHTML = scenarios.map((x, i) => `<button class="${i === sc ? "on" : ""}" onclick="pick(${i})">${esc(x.name)}</button>`).join("");
+  $("scDesc").textContent = sc === null ? "Pick a walkthrough. Each one resets the run." : scenarios[sc].desc;
+  $("scSteps").innerHTML = sc === null ? "" : scenarios[sc].steps.map((k, i) =>
+    `<button ${i !== step ? "disabled" : ""} class="${i === step ? "next" : ""}" onclick="runStep()">${i + 1}. ${esc(A[k][0])}</button>`).join("");
+  $("free").innerHTML = Object.entries(A).map(([k, [label]]) => `<button onclick="A.${k}[1]();render()">${esc(label)}</button>`).join("") + `<div class="grp">reset</div><button onclick="sc=null;reset();render()">Reset</button>`;
+  const r = S.run;
+  $("state").innerHTML = `<div class="kv"><span>branch head</span> ${S.world.head} &nbsp; <span>history</span> ${S.world.history.join(" → ")}</div>` + (!r ? "<p class='q'>No run yet.</p>" :
+    `<div class="kv"><span>worktree at</span> ${r.worktreeHead} &nbsp; <span>reviewed</span> ${r.reviewedHead || "–"} &nbsp; <span>pending</span> ${r.pending || "–"} &nbsp; <span>done</span> ${r.done || "–"}</div>
+     <h2>Ledger</h2><table><tr><th>id</th><th>finding</th><th>status</th><th>at</th></tr>${r.findings.map((f) => `<tr><td>${f.id}</td><td>${esc(f.title)}</td><td>${f.status}</td><td>${f.at}</td></tr>`).join("") || "<tr><td colspan=4 class=q>empty</td></tr>"}</table>`);
+  $("files").innerHTML = !r ? "" : Object.entries(r.files).map(([p, c]) => `<div class="q">${esc(p)}</div><pre>${esc(c)}</pre>`).join("") || "<p class='q'>none</p>";
+  $("events").innerHTML = !r ? "" : `<pre>${r.events.map((e) => esc(JSON.stringify(e))).join("\n")}</pre>`;
+}
+function runStep() { A[scenarios[sc].steps[step]][1](); step++; render(); }
+render();
+</script>
+</body>
+</html>
