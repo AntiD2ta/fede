@@ -92,6 +92,13 @@ The mode in which fede also marks the pull request ready for review on its own. 
 A directory of prompts, schemas, policies and vendored skills that shapes how fede reviews and verifies, possibly extending another package.
 _Avoid_: plugin, profile, preset
 
+**Layer**:
+One directory in the chain fede searches for prompts and skills: the repo's `.fede/`, the project profile, a package, or a package it extends.
+
+**Override**:
+A prompt file or skill directory in a higher layer that replaces the one at the same path in a lower layer.
+_Avoid_: patch, fork
+
 **Reference package**:
 The package shipped with fede, opinionated and usable out of the box.
 
