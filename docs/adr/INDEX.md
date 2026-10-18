@@ -16,3 +16,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0010](0010-submitter-is-a-claim.md) | Who submitted a result is a recorded claim, not authentication | Coordinator contract, human control | accepted |
 | [0011](0011-overrides-shadow-whole-files.md) | Overrides shadow whole files and whole skill directories | Packages, customization | accepted |
 | [0012](0012-findings-are-immutable.md) | Findings are immutable; status is derived | Findings, ledger | accepted |
+| [0013](0013-reference-package-over-engine-contracts.md) | The reference package is an inventory over engine-owned contracts | Packages, GitHub, PR record | accepted |

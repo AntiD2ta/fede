@@ -72,7 +72,7 @@ Turning a finding or blocker into a decision for the human.
 ## Verification
 
 **Check**:
-A verification fede runs or requests: a command, an agent driving a verification skill, or a forge check such as CI.
+A verification fede runs or requests: a command, an agent driving a verification skill, or a CI check.
 _Avoid_: test, gate
 
 **Evidence**:
@@ -90,6 +90,10 @@ The number of repair attempts fede allows in a category (review fixes, check fix
 
 **Push plan**:
 What a push would publish: its commits, the findings it addresses and the replies it posts. It is computed, not stored.
+
+**Record**:
+The comment fede keeps on a pull request for one run: its findings, the decisions and who claimed them, deferred findings and the evidence summary. fede never writes the pull request body.
+_Avoid_: report, summary
 
 **Ready packet**:
 The state in which fede hands the change to the human: CI green, no conflicts, review clean, evidence attached, acceptance criteria met, pull request still a draft.
