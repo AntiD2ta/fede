@@ -15,7 +15,7 @@ The engine owns every contract a package fills: the prompt ids, the base result 
 - **The engine never writes the PR body.** The draft starts with `--fill`. When a layer provides `pr-body`, a writing task runs once before done; `pr_body: off` disables it. The engine's record goes in one PR comment per run, found by a hidden marker and edited in place on every push; a new run's comment marks the previous one superseded.
 - **Push gate.** `push_gate: rules | off | always`. `rules` is the default: automatic on the user's own draft, gated when the PR is out of draft or commits touch protected paths, skipped and reported locally when the push is not permitted. Budgets are 3 per category.
 - **GitHub through `go-github`.** The token comes from `GH_TOKEN` or `GITHUB_TOKEN`, then `gh auth token` when `gh` is installed. Pushes use the `git` CLI. A preflight before the first outside action checks the token, push permission, `git push --dry-run`, the git user and signing; a failure is a `retry | stop` decision. The record names both identities. Tests use real git with a bare remote and an `httptest` GitHub server, not fakes.
-- **Vendored skills pin releases.** mattpocock/skills `v1.3.1`: `code-review`, `pr`, `retro`, `writing-for-agents`. cursor/plugins pstack `0.15.26` (commit 0b8e952, since pstack has no tags): `unslop`, `create-verification-skill` with `references/feature-map-example/`, `maintain-verification-skill`. Each directory carries `LICENSE` and `SOURCE`; `SOURCE` records `version` and `commit`; `pr` keeps `CREDITS.md`.
+- **Vendored skills pin the latest stable release at vendoring time,** never an arbitrary commit. From mattpocock/skills, pinned by tag (for example `v1.3.1`): `code-review`, `pr`, `retro`, `writing-for-agents`. From cursor/plugins pstack, which has no tags, pinned by the `plugin.json` version plus the commit that set it (for example `0.15.26`): `unslop`, `create-verification-skill` with `references/feature-map-example/`, `maintain-verification-skill`. Each directory carries `LICENSE` and `SOURCE`; `SOURCE` records `version` and `commit`; `pr` keeps `CREDITS.md`.
 
 ## Considered options
 
@@ -31,4 +31,4 @@ The engine owns every contract a package fills: the prompt ids, the base result 
 - Amends ADR 0004: fede talks to GitHub through `go-github`; `gh` is optional.
 - Amends the initial design: the PR body is no longer the engine's surface; the record comment carries the claimed decisions (ADR 0010) and deferred findings (ADR 0012).
 - `tier` and `thinking` in task items become optional.
-- The code-review copy at `v1.3.1` predates its standards-file search; a later tag brings it in through the versioned-sources notice.
+- Each release of fede re-vendors the skills at their latest stable release.
