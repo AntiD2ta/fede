@@ -25,7 +25,7 @@ An item that only the human can resolve, such as a finding touching the spec or 
 _Avoid_: approval, question
 
 **Wait**:
-An item telling the coordinator that nothing can progress until something outside changes, and when to ask again.
+An item telling the coordinator that nothing can progress until something outside changes, what it is waiting on (its blocker), and when to ask again.
 
 **Role**:
 The job an agent performs in a task: reviewer, verifier, fixer, conflict resolver, or coordinator.
@@ -98,6 +98,13 @@ _Avoid_: requirement, success criterion
 **Criterion verdict**:
 An agent check's judgment on one acceptance criterion at a commit: pass, fail, blocked, or not applicable, with notes.
 _Avoid_: verdict
+
+**Cause**:
+Why a check failed: the change, the environment, or a flake. The verifier gives it; until the verifier exists, the human does.
+_Avoid_: reason, root cause
+
+**Stale base**:
+A failed CI run whose target branch has moved since the push that triggered it, so retrying it would test the old target.
 
 **Budget**:
 The number of repair attempts fede allows in a category (review fixes, check fixes, conflict repairs) before escalating.
