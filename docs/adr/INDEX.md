@@ -19,3 +19,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0013](0013-reference-package-over-engine-contracts.md) | The reference package is an inventory over engine-owned contracts | Packages, GitHub, PR record | accepted |
 | [0014](0014-writing-roles-use-the-owning-worktree.md) | Writing roles work in the branch's owning worktree | Worktrees, fixer, one writer per branch | accepted |
 | [0015](0015-conflict-repairs-checked-through-ledger-and-tripwires.md) | Conflict repairs are checked through the ledger and tripwires | Conflicts, rebase, escalation | accepted |
+| [0016](0016-agent-checks-verdict-per-criterion.md) | Agent checks return one verdict per acceptance criterion | Agent checks, acceptance criteria, evidence | accepted |

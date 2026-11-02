@@ -88,7 +88,15 @@ Artifacts that prove a check verdict, bound to the commit they were produced at.
 _Avoid_: proof, logs
 
 **Check verdict**:
-A check's result at a commit: pass, pass with notes, or fail.
+A check's result at a commit: pass, fail, or blocked when an agent check could not exercise the change. A pass with notes is shown as such.
+_Avoid_: verdict
+
+**Acceptance criterion**:
+A statement the change must satisfy, copied from the linked ticket, the pull request or the human, never guessed.
+_Avoid_: requirement, success criterion
+
+**Criterion verdict**:
+An agent check's judgment on one acceptance criterion at a commit: pass, fail, blocked, or not applicable, with notes.
 _Avoid_: verdict
 
 **Budget**:
