@@ -17,3 +17,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0011](0011-overrides-shadow-whole-files.md) | Overrides shadow whole files and whole skill directories | Packages, customization | accepted |
 | [0012](0012-findings-are-immutable.md) | Findings are immutable; status is derived | Findings, ledger | accepted |
 | [0013](0013-reference-package-over-engine-contracts.md) | The reference package is an inventory over engine-owned contracts | Packages, GitHub, PR record | accepted |
+| [0014](0014-writing-roles-use-the-owning-worktree.md) | Writing roles work in the branch's owning worktree | Worktrees, fixer, one writer per branch | accepted |
