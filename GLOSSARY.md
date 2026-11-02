@@ -73,6 +73,10 @@ The file listing findings the human chose to fix, written so any agent can pick 
 **Escalation**:
 Turning a finding or blocker into a decision for the human.
 
+**Conflict report**:
+The conflict resolver's account of each conflicted path: which side's intent survives, and why.
+_Avoid_: repair report, resolution log
+
 ## Verification
 
 **Check**:
