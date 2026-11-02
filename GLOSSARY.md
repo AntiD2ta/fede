@@ -80,7 +80,7 @@ _Avoid_: repair report, resolution log
 ## Verification
 
 **Check**:
-A verification fede runs or requests: a command, an agent driving a verification skill, or a CI check.
+A verification fede runs or requests: a command, an agent driving a verification skill, or a CI check. A command check may also return findings.
 _Avoid_: test, gate
 
 **Evidence**:
@@ -142,6 +142,10 @@ _Avoid_: patch, fork
 
 **Reference package**:
 The package shipped with fede, opinionated and usable out of the box.
+
+**Exec seam**:
+The contract by which fede runs a program a check rule names and reads back its verdict and findings. It is the only promised way to extend fede with code.
+_Avoid_: plugin, hook, extension API
 
 **Tier**:
 A named class of model (fast, medium, flagship, frontier) that a task asks for; the coordinator maps it to a concrete model.
