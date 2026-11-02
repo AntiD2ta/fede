@@ -30,6 +30,10 @@ An item telling the coordinator that nothing can progress until something outsid
 **Role**:
 The job an agent performs in a task: reviewer, verifier, fixer, conflict resolver, or coordinator.
 
+**Owning worktree**:
+The worktree that has the run's branch checked out; the only place the branch is written during a run.
+_Avoid_: implementer's worktree, fix worktree
+
 **Step**:
 A stage of the fixed pipeline, such as review, checks or push.
 _Avoid_: stage, gate
