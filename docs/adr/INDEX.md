@@ -20,3 +20,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0014](0014-writing-roles-use-the-owning-worktree.md) | Writing roles work in the branch's owning worktree | Worktrees, fixer, one writer per branch | accepted |
 | [0015](0015-conflict-repairs-checked-through-ledger-and-tripwires.md) | Conflict repairs are checked through the ledger and tripwires | Conflicts, rebase, escalation | accepted |
 | [0016](0016-agent-checks-verdict-per-criterion.md) | Agent checks return one verdict per acceptance criterion | Agent checks, acceptance criteria, evidence | accepted |
+| [0017](0017-ci-watched-through-rules.md) | CI is watched through rules, and the default rule watches every check | CI watch, flake retry, stale base | accepted |
