@@ -15,7 +15,7 @@ Packages and users add behavior in code only through the exec seam: fede runs th
 - **Packages may ship scripts** that rules call through `$FEDE_LAYER`, for example `run: $FEDE_LAYER/bin/check-api`. The reference package ships none (ADR 0013).
 - **Trust.** Commands run with the user's permissions. fede adds no gate beyond the `.fede/**` tripwire, because the branch's own tests already run code the agent wrote and the implementing agent already had a shell. The docs say so plainly, as Pi's do for extensions.
 - **Go builds are an unpromised escape hatch.** The library stays public (ADR 0008), but in v0.x its exported API may change in any release. It has no registration API and is not documented as an extension seam. A custom binary can't be combined with another custom binary, while packages combine through `extends`.
-- **The fede skill teaches the mechanics per harness:** how to keep the running `next` alive (on Claude Code a foreground call that reaches its limit, 2 minutes by default and at most 10, moves to the background and keeps running; opencode needs a background call; Pi takes a long `timeout`), polling `next` for progress, and handling the timeout decision.
+- **The fede skill teaches the mechanics per harness:** how to keep the running `next` alive (on Claude Code a foreground call that reaches its limit, 2 minutes by default and at most 10, moves to the background and keeps running for up to 10 more minutes; opencode needs a background call; Pi takes a long `timeout`), polling `next` for progress, and handling the timeout decision.
 
 ## Considered options
 
