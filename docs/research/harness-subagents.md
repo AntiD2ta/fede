@@ -25,6 +25,7 @@ Scope: ticket AntiD2ta/fede#3. Every page below is undated, so versions come fro
 - **Visible.** Foreground subagents block. Background rows appear in the subagent panel and `/tasks`, and the transcript shows a tool-call row with the subagent name ([sub-agents](https://code.claude.com/docs/en/sub-agents)). Headless `-p` visibility is unknown (Q5).
 - **Headless flags.** `claude -p` accepts `--model`, `--effort`, `--tools`, `--agent`, and `--add-dir` ([CLI reference](https://code.claude.com/docs/en/cli-reference)).
 - **Lifecycle.** A background command started by a foreground subagent stops when that subagent ends ([tools reference](https://code.claude.com/docs/en/tools-reference)).
+- **Shell limits (observed, not from docs).** Probed on 2.1.312 (interactive) and 2.1.318 (`claude -p`) with Haiku, with `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS` unset. The Bash tool says "default 120000, max 600000 for a foreground command". A foreground command that reaches its limit is not killed: it "was moved to the background" and keeps running, and the agent is notified when it ends. A `timeout` above 600000 is accepted and capped at 600 s. Under `-p`, a background command is stopped 10 minutes after it went to the background, whether moved there or started with `run_in_background` ("was stopped after reaching its background time limit"). A foreground call with `timeout: 600000` can therefore run for about 20 minutes in total. `-p` stays alive until its background commands end or are stopped. Whether the 10-minute background limit also applies interactively was not tested.
 
 ## Codex CLI
 
@@ -81,7 +82,7 @@ The task item must contain:
 4. An abstract tool profile such as `read-only`, mapped per harness: Claude `tools`, opencode permissions, Pi `--tools read,grep,find,ls`. Codex has no per-agent sandbox, so use `codex exec --sandbox read-only` or accept inherited permissions.
 5. Absolute paths for the prompt file and the result schema. Only Codex `exec` enforces a schema (`--output-schema`), so fede should validate on `fede submit`.
 6. Absolute `SKILL.md` paths, with the instruction to resolve relative files against the skill's directory. This is the only path-independent method on Claude, Codex, and opencode.
-7. A deadline. Do not assume a foreground shell command lasts longer than 2 minutes (Claude and opencode defaults).
+7. A deadline. Do not assume a foreground shell command lasts longer than 2 minutes (Claude and opencode defaults). On Claude a longer command moves to the background instead of dying, and a background command is stopped after 10 minutes, at least under `-p`.
 
 **Uniform fallback.** Launch each task as a shell child, which uses flags the sources document: `codex exec --cd <dir> --model <m> -c model_reasoning_effort=<e> --sandbox read-only --output-schema <s> -o <out>`; `claude -p --model <m> --effort <e> --tools <list> --add-dir <dir>` from the target cwd; `opencode run --dir <dir> -m <m> --variant <v> --agent <a>`; `pi --print --model <m>:<e> --tools <list> --skill <path>`. The cost is that native visibility is lost unless the child runs in a pane. opencode's tool profile needs a pre-written agent file.
 
