@@ -6,7 +6,7 @@ Packages and users add behavior in code only through the exec seam: fede runs th
 
 - **fede runs `command` rules itself,** synchronously inside `next`, in its own worktree at the reviewed commit (ADR 0014). Running a process is not spawning an agent, so ADR 0001 holds. A rule gains `run`, a string fede passes to `sh -c`, and `timeout`, which defaults to 10 minutes and may be set in any layer.
 - **One `next` runs every pending rule in order** and journals each verdict as its rule ends. Before it starts, `next` returns `{kind: "wait", on: "check", rules, timeout}`, where `timeout` is the sum of the pending rules' timeouts. That sum bounds the call that runs them, so the coordinator can keep it alive that long.
-- **Polling.** A `next` that finds the run locked during the checks step returns at once with a progress wait (`done`, `running`, `pending`) instead of blocking. When the harness kills the running call, the OS releases its lock, and the next call re-runs the interrupted rule and the pending ones. A check has no outside effect, so a killed check re-runs instead of failing closed (ADR 0002).
+- **Polling.** A `next` that finds the run locked during the checks step returns at once with a progress wait (`done`, `running`, `pending`, and `after: 10`, a hint in seconds as for CI waits in ADR 0017) instead of blocking. `next --wait` polls the same way and returns after at most 90 s. When the harness kills the running call, the OS releases its lock, and the next call re-runs the interrupted rule and the pending ones. A check has no outside effect, so a killed check re-runs instead of failing closed (ADR 0002).
 - **No fail-fast.** A failed or timed-out rule does not stop the sequence. Failures become findings for one round, which costs one check-fix attempt.
 - **Timeouts are decisions.** fede kills a rule that reaches its timeout. All timed-out rules in a sequence share one decision, answered with `--by human` (ADR 0010): `{"choice": "retry", "timeout": "<duration>"}` or `{"choice": "stop"}`. The new timeout holds for the rest of the run and is recorded in the ledger.
 - **Findings file.** fede sets `FEDE_FINDINGS` to a path. The program may write `{"findings": [{title, path, line, body, labels, key}]}` there, validated against an engine base schema that layers may extend (ADR 0013). A non-zero exit fails the check. With no file, fede raises one finding from the rule name and the tail of the output. Exit 0 passes. Findings written on exit 0 become the notes of a pass and never raise a finding (ADR 0016).
@@ -32,5 +32,5 @@ Packages and users add behavior in code only through the exec seam: fede runs th
 
 - Amends ADR 0013: a `command` rule gains `run` and `timeout`, and may return findings.
 - Extends ADR 0012: a check finding with a `key` resolves when its key disappears at a newer commit, not only when the whole check passes.
-- Adds the `check` wait blocker (ADR 0006, additive).
+- Adds the `check` wait blocker, which uses the `after` field from ADR 0017 (ADR 0006, additive).
 - Detached runs and parallel rules can land later without changing the item shape.
