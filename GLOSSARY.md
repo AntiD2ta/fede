@@ -140,6 +140,10 @@ One directory in the chain fede searches for prompts and skills: the repo's `.fe
 A prompt file or skill directory in a higher layer that replaces the one at the same path in a lower layer.
 _Avoid_: patch, fork
 
+**Setting**:
+A named value that shapes a run, defined by the engine (such as `fixer` or `ci_timeout`) or declared by a package. Any layer may set it, and the most specific layer wins.
+_Avoid_: option, config
+
 **Reference package**:
 The package shipped with fede, opinionated and usable out of the box.
 
