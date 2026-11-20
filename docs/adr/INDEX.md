@@ -23,3 +23,4 @@ Every architecture decision record in `docs/adr/`, with its topic. Update this t
 | [0017](0017-ci-watched-through-rules.md) | CI is watched through rules, and the default rule watches every check | CI watch, flake retry, stale base | accepted |
 | [0018](0018-code-extends-through-executables.md) | Code extends fede through executables, not an embedded runtime | Extensibility, command checks, packages | accepted |
 | [0019](0019-settings-resolve-per-key-package-settings-namespaced.md) | Settings resolve per key, and package settings are namespaced | Settings, layers, fixer | accepted |
+| [0020](0020-implementer-evidence-trusted-through-the-verifier.md) | Implementer evidence is trusted only through the verifier's acceptance | Agent checks, implementer evidence, verifier | accepted |
