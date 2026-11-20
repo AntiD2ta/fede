@@ -30,6 +30,10 @@ An item telling the coordinator that nothing can progress until something outsid
 **Role**:
 The job an agent performs in a task: reviewer, verifier, fixer, conflict resolver, or coordinator.
 
+**Implementer**:
+The agent or human who wrote the change before handing it over. It is not a role, because fede never dispatches it.
+_Avoid_: author, developer
+
 **Owning worktree**:
 The worktree that has the run's branch checked out; the only place the branch is written during a run.
 _Avoid_: implementer's worktree, fix worktree
@@ -84,8 +88,12 @@ A verification fede runs or requests: a command, an agent driving a verification
 _Avoid_: test, gate
 
 **Evidence**:
-Artifacts that prove a check verdict, bound to the commit they were produced at.
+Artifacts that prove a check verdict, bound to the commit they were produced at. Implementer evidence counts only for the criteria the verifier accepts.
 _Avoid_: proof, logs
+
+**Implementer evidence**:
+The implementer's claimed verdict and artifacts for each acceptance criterion, given through the coordinator at the handed-over commit.
+_Avoid_: self-report, implementer proof
 
 **Check verdict**:
 A check's result at a commit: pass, fail, or blocked when an agent check could not exercise the change. A pass with notes is shown as such.
@@ -98,6 +106,10 @@ _Avoid_: requirement, success criterion
 **Criterion verdict**:
 An agent check's judgment on one acceptance criterion at a commit: pass, fail, blocked, or not applicable, with notes.
 _Avoid_: verdict
+
+**Trusted verdict**:
+A criterion verdict taken from implementer evidence that the verifier accepted, shown as trusted rather than checked.
+_Avoid_: accepted verdict, verified claim
 
 **Cause**:
 Why a check failed: the change, the environment, or a flake. The verifier gives it; until the verifier exists, the human does.
